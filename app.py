@@ -2,6 +2,7 @@ import io, uuid, dropbox
 from flask import Flask, request, render_template_string
 from PIL import Image
 from datetime import datetime
+from PIL import Image, ImageOps  # Πρόσθεσε το ImageOps εδώ
 
 app = Flask(__name__)
 
@@ -40,17 +41,19 @@ def index():
             # 1. Επεξεργασία εικόνας
             img = Image.open(file).convert("RGBA")
             frame = Image.open("frame.png").convert("RGBA")
-            
+            # 2. ΔΙΟΡΘΩΣΗ ΠΡΟΣΑΝΑΤΟΛΙΣΜΟΥ (Αυτό έλειπε!)
+            img = ImageOps.exif_transpose(img)
+
             # Resize frame to match photo
             frame = frame.resize(img.size, Image.Resampling.LANCZOS)
             combined = Image.alpha_composite(img, frame)
             
-            # 2. Προετοιμασία για upload
+            # 3. Προετοιμασία για upload
             buffer = io.BytesIO()
             combined.convert("RGB").save(buffer, format="JPEG", quality=85)
             buffer.seek(0)
             
-            # 3. Μοναδικό όνομα αρχείου (για να μην σβηστεί καμία!)
+            # 4. Μοναδικό όνομα αρχείου (για να μην σβηστεί καμία!)
             filename = f"/Wedding_Gallery/photo_{datetime.now().strftime('%H%M%S')}_{uuid.uuid4().hex[:4]}.jpg"
             
             dbx.files_upload(buffer.getvalue(), filename)
